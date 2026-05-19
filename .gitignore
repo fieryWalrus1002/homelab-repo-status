@@ -1,3 +1,6 @@
+# Data directory results I don't want to share
+data/*.jsonl
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
