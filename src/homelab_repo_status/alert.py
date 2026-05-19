@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+import urllib.request
 from logging.handlers import RotatingFileHandler
 
 logger = logging.getLogger(__name__)
@@ -9,11 +11,15 @@ def _configure_logger() -> None:
     logger.setLevel(logging.INFO)
     logger.propagate = False
 
-    log_path = os.getenv("HOMELAB_REPO_STATUS_ALERT_LOG", "homelab_repo_status_alerts.log")
+    log_path = os.getenv(
+        "HOMELAB_REPO_STATUS_ALERT_LOG", "homelab_repo_status_alerts.log"
+    )
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 
     for existing_handler in logger.handlers:
-        if isinstance(existing_handler, RotatingFileHandler) and getattr(existing_handler, "baseFilename", None) == os.path.abspath(log_path):
+        if isinstance(existing_handler, RotatingFileHandler) and getattr(
+            existing_handler, "baseFilename", None
+        ) == os.path.abspath(log_path):
             existing_handler.setFormatter(formatter)
             return
 
@@ -25,12 +31,72 @@ def _configure_logger() -> None:
 _configure_logger()
 
 
+def _ntfy(message: str) -> None:
+    topic = os.getenv("NTFY_TOPIC")
+    if not topic:
+        return
+    try:
+        req = urllib.request.Request(
+            f"https://ntfy.sh/{topic}",
+            data=message.encode(),
+            method="POST",
+            headers={"Title": "homelab-repo-status"},
+        )
+        with urllib.request.urlopen(req, timeout=5):
+            pass
+    except Exception as e:
+        logger.warning(f"ntfy delivery failed: {e}")
+
+
+def _slack(message: str) -> None:
+    webhook_url = os.getenv("SLACK_WEBHOOK_URL")
+    if not webhook_url:
+        return
+    try:
+        payload = json.dumps(
+            {
+                "text": message,
+                "username": os.getenv("SLACK_USERNAME", "homelab-repo-status"),
+                "icon_emoji": os.getenv("SLACK_ICON_EMOJI", ":house:"),
+            }
+        ).encode()
+        req = urllib.request.Request(
+            webhook_url,
+            data=payload,
+            method="POST",
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=5):
+            pass
+    except Exception as e:
+        logger.warning(f"Slack delivery failed: {e}")
+
+
 class Alert:
     def __init__(self, message: str):
         self.message = message
 
     def trigger(self) -> None:
         logger.info(f"ALERT: {self.message}")
+        _ntfy(self.message)
+        _slack(self.message)
+
+
+def trigger_batch(messages: list[str]) -> None:
+    for msg in messages:
+        logger.info(f"ALERT: {msg}")
+
+    if not messages:
+        return
+
+    if len(messages) == 1:
+        combined = messages[0]
+    else:
+        lines = "\n".join(f"• {m}" for m in messages)
+        combined = f"{len(messages)} repos need attention:\n{lines}"
+
+    _ntfy(combined)
+    _slack(combined)
 
 
 def is_problematic(record: dict) -> bool:
@@ -48,6 +114,8 @@ def alert_message(record: dict) -> str:
         issues.append(f"{count} uncommitted file(s)")
     if record.get("has_unpushed_commits"):
         issues.append(f"{record.get('unpushed_commit_count', 0)} unpushed commit(s)")
-    if not record.get("is_up_to_date_with_remote") and not record.get("has_unpushed_commits"):
+    if not record.get("is_up_to_date_with_remote") and not record.get(
+        "has_unpushed_commits"
+    ):
         issues.append("behind remote")
     return f"{record['repo_name']}: {', '.join(issues)}"

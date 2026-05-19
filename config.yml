@@ -1,0 +1,2 @@
+git:
+  command_timeout: 5  # seconds; applies to each git subprocess (fetch, status, rev-parse, etc.)

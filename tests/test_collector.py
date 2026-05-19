@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-import pytest
 
 from homelab_repo_status.collector import collect
 from homelab_repo_status.git_state import GitState

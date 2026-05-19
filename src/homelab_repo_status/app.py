@@ -1,9 +1,23 @@
-from fastapi import FastAPI, HTTPException
+import logging
+import os
 
+from fastapi import BackgroundTasks, FastAPI, HTTPException
+
+from homelab_repo_status.alert import alert_message, is_problematic, trigger_batch
 from homelab_repo_status.collector import collect
 from homelab_repo_status.output import read_records, write_records
-from homelab_repo_status.alert import Alert
 
+# basicConfig is a no-op under Uvicorn (it configures the root logger first).
+# Configure our package logger explicitly so LOG_LEVEL is always respected.
+_pkg_logger = logging.getLogger("homelab_repo_status")
+_pkg_logger.setLevel(os.getenv("LOG_LEVEL", "INFO").upper())
+if not _pkg_logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(
+        logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
+    )
+    _pkg_logger.addHandler(_handler)
+_pkg_logger.propagate = False
 
 app = FastAPI(title="homelab-repo-status", version="0.1.0")
 
@@ -28,17 +42,15 @@ def trigger_scan() -> dict:
     return {"scanned": len(records)}
 
 
+def _fire_alerts(problems: list[dict]) -> None:
+    trigger_batch([alert_message(repo) for repo in problems])
+
+
 @app.post("/alert")
-def trigger_alert() -> dict:
-    # This endpoint previously triggered an alert unconditionally on every request.
-    # Disable the stub until real "should alert" logic and access controls are implemented.
-    raise HTTPException(
-        status_code=503,
-        detail="Alert triggering is disabled until real alert criteria and authorization are implemented",
-    )
-
-
-# Need some endpoints for the ~/.local/bin/homelab-repo-status script to call:
-# 
-# 1. perform a scan, and return the results as a pretty printed table summary
-# 2. perform a scan, and then trigger an alert if any repositories are found to be in a "bad" state (e.g., outdated, vulnerable, etc.)
+def trigger_alert(background_tasks: BackgroundTasks) -> dict:
+    records = collect()
+    write_records(records)
+    problems = [r for r in records if is_problematic(r)]
+    if problems:
+        background_tasks.add_task(_fire_alerts, problems)
+    return {"scanned": len(records), "alerted": len(problems)}
