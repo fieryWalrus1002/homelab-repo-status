@@ -5,7 +5,6 @@ from fastapi.testclient import TestClient
 
 from homelab_repo_status.app import app
 
-
 RECORDS = [
     {
         "repo_name": "repo-a",
