@@ -79,6 +79,28 @@ git:
 | `NTFY_TOPIC` | _(unset)_ | ntfy.sh topic name |
 | `HOMELAB_REPO_STATUS_ALERT_LOG` | `homelab_repo_status_alerts.log` | Alert log path (docker-compose sets `/app/data/alerts.log`) |
 
+## Development
+
+Install the pre-commit hook once after cloning:
+
+```bash
+ln -s ../../scripts/pre-commit .git/hooks/pre-commit
+```
+
+**Excluding local-only files from scans**
+
+Private notes or scratch files that shouldn't go in `.gitignore` (which is committed) can be excluded without affecting the shared repo:
+
+- Single repo: add patterns to `.git/info/exclude` (never committed)
+- All repos on the machine:
+
+```bash
+git config --global core.excludesfile ~/.gitignore_global
+echo "*.notes.md" >> ~/.gitignore_global
+```
+
+Files excluded this way won't appear in `git status --porcelain`, so the scanner won't count them as uncommitted changes.
+
 ## Cron usage
 
 `POST /alert` is designed to be called on a schedule:
