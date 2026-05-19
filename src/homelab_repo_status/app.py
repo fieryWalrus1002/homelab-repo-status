@@ -30,13 +30,12 @@ def trigger_scan() -> dict:
 
 @app.post("/alert")
 def trigger_alert() -> dict:
-    # STUB: This is where the logic for determining if an alert should be triggered would go. 
-    # For example, maybe theres a ton of work done that isn't commited, or maybe there are some
-    # known vulnerabilities in the dependencies. This is where the logic for determining if an alert
-    # should be triggered would go.
-    alert = Alert("This is a test alert. Replace with real logic to determine when to trigger an alert.")
-    alert.trigger()
-    return {"alert": "Triggered"}
+    # This endpoint previously triggered an alert unconditionally on every request.
+    # Disable the stub until real "should alert" logic and access controls are implemented.
+    raise HTTPException(
+        status_code=503,
+        detail="Alert triggering is disabled until real alert criteria and authorization are implemented",
+    )
 
 
 # Need some endpoitns for the ~/.local/bin/homelab-repo-status script to call:
