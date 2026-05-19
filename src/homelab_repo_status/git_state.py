@@ -15,7 +15,7 @@ class GitState:
 
 def _run(args: list[str], cwd: Path) -> tuple[int, str]:
     result = subprocess.run(args, cwd=cwd, capture_output=True, text=True)
-    return result.returncode, result.stdout.strip()
+    return result.returncode, result.stdout.rstrip()
 
 
 def get_git_state(repo_path: Path) -> GitState:
