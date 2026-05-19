@@ -41,9 +41,7 @@ def _run(args: list[str], cwd: Path) -> tuple[int, str]:
         return result.returncode, result.stdout.rstrip()
     except subprocess.TimeoutExpired:
         elapsed = time.perf_counter() - t0
-        logger.warning(
-            "git cmd=%-50s repo=%-30s TIMEOUT elapsed=%.3fs", cmd, cwd.name, elapsed
-        )
+        logger.warning("git cmd=%-50s repo=%-30s TIMEOUT elapsed=%.3fs", cmd, cwd.name, elapsed)
         return 1, ""
 
 

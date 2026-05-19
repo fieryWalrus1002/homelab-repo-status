@@ -1,8 +1,6 @@
 import json
 
-
 from homelab_repo_status.output import read_records, write_records
-
 
 RECORDS = [
     {

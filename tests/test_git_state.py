@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock, patch
 
-
 from homelab_repo_status.git_state import get_git_state
 
 

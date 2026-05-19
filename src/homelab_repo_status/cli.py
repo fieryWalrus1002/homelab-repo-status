@@ -24,9 +24,7 @@ def cmd_check(_args: argparse.Namespace) -> None:
     for repo in problems:
         Alert(alert_message(repo)).trigger()
 
-    print(
-        f"Alerted on {len(problems)} repositor{'y' if len(problems) == 1 else 'ies'}."
-    )
+    print(f"Alerted on {len(problems)} repositor{'y' if len(problems) == 1 else 'ies'}.")
     sys.exit(1)
 
 
@@ -63,9 +61,7 @@ def _print_table(records: list[dict]) -> None:
             continue
 
         uncommitted = (
-            f"{len(r['uncommitted_files'])} file(s)"
-            if r["has_uncommitted_changes"]
-            else "clean"
+            f"{len(r['uncommitted_files'])} file(s)" if r["has_uncommitted_changes"] else "clean"
         )
         unpushed = str(r["unpushed_commit_count"]) if r["has_unpushed_commits"] else "0"
         in_sync = "yes" if r["is_up_to_date_with_remote"] else "no"

@@ -4,7 +4,6 @@ import pytest
 
 from homelab_repo_status.cli import main
 
-
 PROBLEM_RECORDS = [
     {
         "repo_name": "my-repo",
