@@ -1,6 +1,12 @@
+import logging
 import subprocess
-from dataclasses import dataclass, field
+import time
+from dataclasses import dataclass
 from pathlib import Path
+
+from homelab_repo_status.config import config
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -14,13 +20,26 @@ class GitState:
 
 
 def _run(args: list[str], cwd: Path) -> tuple[int, str]:
-    result = subprocess.run(args, cwd=cwd, capture_output=True, text=True)
-    return result.returncode, result.stdout.rstrip()
+    cmd = " ".join(args)
+    t0 = time.perf_counter()
+    try:
+        result = subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=config["git"]["fetch_timeout"])
+        elapsed = time.perf_counter() - t0
+        logger.debug("git cmd=%-50s repo=%-30s rc=%d elapsed=%.3fs", cmd, cwd.name, result.returncode, elapsed)
+        return result.returncode, result.stdout.rstrip()
+    except subprocess.TimeoutExpired:
+        elapsed = time.perf_counter() - t0
+        logger.warning("git cmd=%-50s repo=%-30s TIMEOUT elapsed=%.3fs", cmd, cwd.name, elapsed)
+        return 1, ""
 
 
 def get_git_state(repo_path: Path) -> GitState:
+    logger.info("scanning repo=%s", repo_path.name)
+    t0 = time.perf_counter()
+
     rc, _ = _run(["git", "rev-parse", "--is-inside-work-tree"], repo_path)
     if rc != 0:
+        logger.info("repo=%s is_git_repo=false", repo_path.name)
         return GitState(
             is_git_repo=False,
             has_uncommitted_changes=False,
@@ -33,13 +52,10 @@ def get_git_state(repo_path: Path) -> GitState:
     _, status_out = _run(["git", "status", "--porcelain"], repo_path)
     uncommitted_files = [line[3:] for line in status_out.splitlines() if line.strip()]
 
-    subprocess.run(["git", "fetch", "--quiet"], cwd=repo_path, capture_output=True)
+    _, _ = _run(["git", "fetch", "--quiet"], repo_path)
 
-    rc, ahead_behind = _run(
-        ["git", "rev-list", "--left-right", "--count", "@{u}...HEAD"], repo_path
-    )
+    rc, ahead_behind = _run(["git", "rev-list", "--left-right", "--count", "@{u}...HEAD"], repo_path)
     if rc != 0:
-        # No upstream tracking branch configured
         is_up_to_date = True
         unpushed_count = 0
     else:
@@ -48,6 +64,12 @@ def get_git_state(repo_path: Path) -> GitState:
         ahead = int(parts[1]) if len(parts) > 1 else 0
         is_up_to_date = ahead == 0 and behind == 0
         unpushed_count = ahead
+
+    elapsed = time.perf_counter() - t0
+    logger.info(
+        "repo=%-30s elapsed=%.3fs uncommitted=%d unpushed=%d in_sync=%s",
+        repo_path.name, elapsed, len(uncommitted_files), unpushed_count, is_up_to_date,
+    )
 
     return GitState(
         is_git_repo=True,

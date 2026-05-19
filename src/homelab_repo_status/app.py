@@ -1,9 +1,16 @@
-from fastapi import FastAPI, HTTPException
+import logging
+import os
+
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 
 from homelab_repo_status.collector import collect
 from homelab_repo_status.output import read_records, write_records
-from homelab_repo_status.alert import Alert, alert_message, is_problematic
+from homelab_repo_status.alert import alert_message, is_problematic, trigger_batch
 
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
 
 app = FastAPI(title="homelab-repo-status", version="0.1.0")
 
@@ -28,11 +35,14 @@ def trigger_scan() -> dict:
     return {"scanned": len(records)}
 
 
+def _fire_alerts(problems: list[dict]) -> None:
+    trigger_batch([alert_message(repo) for repo in problems])
+
+
 @app.post("/alert")
-def trigger_alert() -> dict:
+def trigger_alert(background_tasks: BackgroundTasks) -> dict:
     records = collect()
     write_records(records)
     problems = [r for r in records if is_problematic(r)]
-    for repo in problems:
-        Alert(alert_message(repo)).trigger()
+    background_tasks.add_task(_fire_alerts, problems)
     return {"scanned": len(records), "alerted": len(problems)}

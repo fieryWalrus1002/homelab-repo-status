@@ -74,6 +74,23 @@ class Alert:
         _slack(self.message)
 
 
+def trigger_batch(messages: list[str]) -> None:
+    for msg in messages:
+        logger.info(f"ALERT: {msg}")
+
+    if not messages:
+        return
+
+    if len(messages) == 1:
+        combined = messages[0]
+    else:
+        lines = "\n".join(f"• {m}" for m in messages)
+        combined = f"{len(messages)} repos need attention:\n{lines}"
+
+    _ntfy(combined)
+    _slack(combined)
+
+
 def is_problematic(record: dict) -> bool:
     return (
         record.get("has_uncommitted_changes", False)

@@ -5,10 +5,14 @@ services:
       - "8086:8000"
     volumes:
       - ./data:/app/data
+      - ./config.yml:/app/config.yml:ro
       - ${REPOS_DIR:-$HOME/repos}:/repos
     environment:
       - DATA_DIR=/app/data
       - REPOS_DIR=/repos
       - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+      - SLACK_USERNAME=${SLACK_USERNAME:-homelab-repo-status}
+      - SLACK_ICON_EMOJI=${SLACK_ICON_EMOJI:-:house:}
       - NTFY_TOPIC=${NTFY_TOPIC:-}
       - HOMELAB_REPO_STATUS_ALERT_LOG=${HOMELAB_REPO_STATUS_ALERT_LOG:-/app/data/alerts.log}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
