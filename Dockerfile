@@ -1,8 +1,10 @@
 FROM python:3.13-slim
 
-WORKDIR /app
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/
 
-RUN pip install uv
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
 
 COPY pyproject.toml uv.lock README.md ./
 
