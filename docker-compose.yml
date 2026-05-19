@@ -9,3 +9,6 @@ services:
     environment:
       - DATA_DIR=/app/data
       - REPOS_DIR=/repos
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+      - NTFY_TOPIC=${NTFY_TOPIC:-}
+      - HOMELAB_REPO_STATUS_ALERT_LOG=${HOMELAB_REPO_STATUS_ALERT_LOG:-/app/data/alerts.log}

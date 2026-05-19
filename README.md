@@ -1,61 +1,53 @@
 # homelab-repo-status
 
-A bare-bones Python **uv** project plan for collecting local Git repository status from `~/repos`, writing results to a JSONL file, and serving that data through a local FastAPI app.
+Scans local Git repositories under `~/repos`, persists status to a JSONL file, and exposes the data via a FastAPI service.
 
-## What this project is for
+## Project layout
 
-This project is intended to:
-- Scan each subdirectory in `~/repos`
-- Detect Git state per repository, including:
-  - uncommitted files
-  - whether local is up to date with remote
-  - local commits not pushed yet
-  - local files not committed
-- Persist repository status records to a JSONL file
-- Expose the data via a local FastAPI web app
-- Run the stack with Docker Compose
-
-## Bare-bones project layout
-
-```text
+```
 homelab-repo-status/
-├── README.md
-├── specs/
-│   └── project.md
-├── pyproject.toml            # uv-managed Python project config
-├── src/
-│   └── homelab_repo_status/
-│       ├── collector.py      # walks ~/repos and gathers git status per repo
-│       ├── git_state.py      # git status helpers/checks
-│       ├── output.py         # JSONL writing/reading
-│       └── app.py            # FastAPI app serving status data
+├── src/homelab_repo_status/
+│   ├── collector.py      # walks REPOS_DIR and gathers git state per repo
+│   ├── git_state.py      # git status helpers
+│   ├── output.py         # JSONL read/write
+│   ├── alert.py          # rotating-log alerting
+│   ├── cli.py            # homelab-repo-status CLI
+│   └── app.py            # FastAPI app
 ├── data/
-│   └── repo_status.jsonl     # generated output
-└── docker-compose.yml        # local app orchestration
+│   └── repo_status.jsonl
+├── main.py               # CLI entrypoint
+└── docker-compose.yml
 ```
 
-## Data contract (JSONL)
+## CLI
 
-Each line should be a JSON object representing one repository scan result.
+```
+homelab-repo-status scan    # scan repos and print a status table
+homelab-repo-status check   # scan repos and alert on any with issues (exits 1 if any found)
+```
 
-Suggested fields:
-- `repo_name`
-- `repo_path`
-- `is_git_repo`
-- `has_uncommitted_changes`
-- `uncommitted_files`
-- `is_up_to_date_with_remote`
-- `has_unpushed_commits`
-- `unpushed_commit_count`
-- `scan_timestamp`
+## API endpoints
 
-## Deployment model
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/status` | All repo records |
+| GET | `/status/{repo_name}` | Single repo record |
+| POST | `/scan` | Trigger a scan and persist results |
 
-- Local-first development with **uv**
-- Local API hosting with **FastAPI**
-- Service startup via `docker compose up`
+## Running
 
-## Status
+```bash
+docker compose up
+```
 
-This repository currently documents the intended structure and goals only.
-Implementation code is intentionally not included in this step.
+Service runs on port `8086`. Repos are mounted read-only from `REPOS_DIR`.
+
+## Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `REPOS_DIR` | `~/repos` | Directory to scan |
+| `DATA_DIR` | `/app/data` | Where `repo_status.jsonl` is written |
+| `HOMELAB_REPO_STATUS_ALERT_LOG` | `homelab_repo_status_alerts.log` | Alert log path |
+| `NTFY_TOPIC` | _(unset)_ | ntfy.sh topic to push alerts to (optional) |
+| `SLACK_WEBHOOK_URL` | _(unset)_ | Slack incoming webhook URL (optional) |

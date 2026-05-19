@@ -78,3 +78,25 @@ class TestTriggerScan:
             r = client.post("/scan")
         assert r.status_code == 200
         assert r.json() == {"scanned": 2}
+
+
+class TestTriggerAlert:
+    def test_returns_scanned_and_alerted_counts(self, client):
+        with (
+            patch("homelab_repo_status.app.collect", return_value=RECORDS),
+            patch("homelab_repo_status.app.write_records"),
+            patch("homelab_repo_status.alert.urllib.request.urlopen"),
+        ):
+            r = client.post("/alert")
+        assert r.status_code == 200
+        assert r.json() == {"scanned": 2, "alerted": 1}
+
+    def test_alerted_zero_when_all_clean(self, client):
+        clean = [RECORDS[0]]
+        with (
+            patch("homelab_repo_status.app.collect", return_value=clean),
+            patch("homelab_repo_status.app.write_records"),
+        ):
+            r = client.post("/alert")
+        assert r.status_code == 200
+        assert r.json() == {"scanned": 1, "alerted": 0}

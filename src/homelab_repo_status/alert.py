@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+import urllib.request
 from logging.handlers import RotatingFileHandler
 
 logger = logging.getLogger(__name__)
@@ -25,12 +27,51 @@ def _configure_logger() -> None:
 _configure_logger()
 
 
+def _ntfy(message: str) -> None:
+    topic = os.getenv("NTFY_TOPIC")
+    if not topic:
+        return
+    try:
+        req = urllib.request.Request(
+            f"https://ntfy.sh/{topic}",
+            data=message.encode(),
+            method="POST",
+            headers={"Title": "homelab-repo-status"},
+        )
+        urllib.request.urlopen(req, timeout=5)
+    except Exception as e:
+        logger.warning(f"ntfy delivery failed: {e}")
+
+
+def _slack(message: str) -> None:
+    webhook_url = os.getenv("SLACK_WEBHOOK_URL")
+    if not webhook_url:
+        return
+    try:
+        payload = json.dumps({
+            "text": message,
+            "username": os.getenv("SLACK_USERNAME", "homelab-repo-status"),
+            "icon_emoji": os.getenv("SLACK_ICON_EMOJI", ":house:"),
+        }).encode()
+        req = urllib.request.Request(
+            webhook_url,
+            data=payload,
+            method="POST",
+            headers={"Content-Type": "application/json"},
+        )
+        urllib.request.urlopen(req, timeout=5)
+    except Exception as e:
+        logger.warning(f"Slack delivery failed: {e}")
+
+
 class Alert:
     def __init__(self, message: str):
         self.message = message
 
     def trigger(self) -> None:
         logger.info(f"ALERT: {self.message}")
+        _ntfy(self.message)
+        _slack(self.message)
 
 
 def is_problematic(record: dict) -> bool:

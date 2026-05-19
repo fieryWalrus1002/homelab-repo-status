@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 
 from homelab_repo_status.collector import collect
 from homelab_repo_status.output import read_records, write_records
-from homelab_repo_status.alert import Alert
+from homelab_repo_status.alert import Alert, alert_message, is_problematic
 
 
 app = FastAPI(title="homelab-repo-status", version="0.1.0")
@@ -30,15 +30,9 @@ def trigger_scan() -> dict:
 
 @app.post("/alert")
 def trigger_alert() -> dict:
-    # This endpoint previously triggered an alert unconditionally on every request.
-    # Disable the stub until real "should alert" logic and access controls are implemented.
-    raise HTTPException(
-        status_code=503,
-        detail="Alert triggering is disabled until real alert criteria and authorization are implemented",
-    )
-
-
-# Need some endpoints for the ~/.local/bin/homelab-repo-status script to call:
-# 
-# 1. perform a scan, and return the results as a pretty printed table summary
-# 2. perform a scan, and then trigger an alert if any repositories are found to be in a "bad" state (e.g., outdated, vulnerable, etc.)
+    records = collect()
+    write_records(records)
+    problems = [r for r in records if is_problematic(r)]
+    for repo in problems:
+        Alert(alert_message(repo)).trigger()
+    return {"scanned": len(records), "alerted": len(problems)}
