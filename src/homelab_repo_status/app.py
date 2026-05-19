@@ -13,9 +13,7 @@ _pkg_logger = logging.getLogger("homelab_repo_status")
 _pkg_logger.setLevel(os.getenv("LOG_LEVEL", "INFO").upper())
 if not _pkg_logger.handlers:
     _handler = logging.StreamHandler()
-    _handler.setFormatter(
-        logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
-    )
+    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
     _pkg_logger.addHandler(_handler)
 _pkg_logger.propagate = False
 
