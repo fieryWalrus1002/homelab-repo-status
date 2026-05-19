@@ -1,10 +1,28 @@
 import logging
+import os
+from logging.handlers import RotatingFileHandler
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = logging.FileHandler("homelab_repo_status_alerts.log")
-handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-logger.addHandler(handler)
+
+
+def _configure_logger() -> None:
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+
+    log_path = os.getenv("HOMELAB_REPO_STATUS_ALERT_LOG", "homelab_repo_status_alerts.log")
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+
+    for existing_handler in logger.handlers:
+        if isinstance(existing_handler, RotatingFileHandler) and getattr(existing_handler, "baseFilename", None) == os.path.abspath(log_path):
+            existing_handler.setFormatter(formatter)
+            return
+
+    handler = RotatingFileHandler(log_path, maxBytes=1048576, backupCount=3)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+
+_configure_logger()
 
 
 class Alert:
