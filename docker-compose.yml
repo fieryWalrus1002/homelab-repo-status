@@ -5,7 +5,7 @@ services:
       - "8086:8000"
     volumes:
       - ./data:/app/data
-      - ${REPOS_DIR:-~/repos}:/repos
+      - ${REPOS_DIR:-$HOME/repos}:/repos
     environment:
       - DATA_DIR=/app/data
       - REPOS_DIR=/repos
