@@ -23,13 +23,27 @@ def _run(args: list[str], cwd: Path) -> tuple[int, str]:
     cmd = " ".join(args)
     t0 = time.perf_counter()
     try:
-        result = subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=config["git"]["fetch_timeout"])
+        result = subprocess.run(
+            args,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=config["git"]["command_timeout"],
+        )
         elapsed = time.perf_counter() - t0
-        logger.debug("git cmd=%-50s repo=%-30s rc=%d elapsed=%.3fs", cmd, cwd.name, result.returncode, elapsed)
+        logger.debug(
+            "git cmd=%-50s repo=%-30s rc=%d elapsed=%.3fs",
+            cmd,
+            cwd.name,
+            result.returncode,
+            elapsed,
+        )
         return result.returncode, result.stdout.rstrip()
     except subprocess.TimeoutExpired:
         elapsed = time.perf_counter() - t0
-        logger.warning("git cmd=%-50s repo=%-30s TIMEOUT elapsed=%.3fs", cmd, cwd.name, elapsed)
+        logger.warning(
+            "git cmd=%-50s repo=%-30s TIMEOUT elapsed=%.3fs", cmd, cwd.name, elapsed
+        )
         return 1, ""
 
 
@@ -54,7 +68,9 @@ def get_git_state(repo_path: Path) -> GitState:
 
     _, _ = _run(["git", "fetch", "--quiet"], repo_path)
 
-    rc, ahead_behind = _run(["git", "rev-list", "--left-right", "--count", "@{u}...HEAD"], repo_path)
+    rc, ahead_behind = _run(
+        ["git", "rev-list", "--left-right", "--count", "@{u}...HEAD"], repo_path
+    )
     if rc != 0:
         is_up_to_date = True
         unpushed_count = 0
@@ -68,7 +84,11 @@ def get_git_state(repo_path: Path) -> GitState:
     elapsed = time.perf_counter() - t0
     logger.info(
         "repo=%-30s elapsed=%.3fs uncommitted=%d unpushed=%d in_sync=%s",
-        repo_path.name, elapsed, len(uncommitted_files), unpushed_count, is_up_to_date,
+        repo_path.name,
+        elapsed,
+        len(uncommitted_files),
+        unpushed_count,
+        is_up_to_date,
     )
 
     return GitState(

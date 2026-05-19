@@ -1,2 +1,2 @@
 git:
-  fetch_timeout: 0.5  # seconds per repo; repos that exceed this are treated as offline
+  command_timeout: 5  # seconds; applies to each git subprocess (fetch, status, rev-parse, etc.)

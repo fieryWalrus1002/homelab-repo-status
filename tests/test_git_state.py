@@ -1,7 +1,5 @@
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from homelab_repo_status.git_state import get_git_state
 
@@ -29,10 +27,10 @@ class TestGetGitState:
     def test_clean_repo_in_sync_with_remote(self, tmp_path):
         with patch("homelab_repo_status.git_state.subprocess.run") as mock_run:
             mock_run.side_effect = [
-                _proc(0, "true"),   # rev-parse
-                _proc(0, ""),       # status --porcelain
-                _proc(0),           # fetch
-                _proc(0, "0\t0"),   # rev-list ahead/behind
+                _proc(0, "true"),  # rev-parse
+                _proc(0, ""),  # status --porcelain
+                _proc(0),  # fetch
+                _proc(0, "0\t0"),  # rev-list ahead/behind
             ]
             state = get_git_state(tmp_path)
 
@@ -63,7 +61,7 @@ class TestGetGitState:
                 _proc(0, "true"),
                 _proc(0, ""),
                 _proc(0),
-                _proc(0, "0\t3"),   # 3 commits ahead
+                _proc(0, "0\t3"),  # 3 commits ahead
             ]
             state = get_git_state(tmp_path)
 
@@ -77,7 +75,7 @@ class TestGetGitState:
                 _proc(0, "true"),
                 _proc(0, ""),
                 _proc(0),
-                _proc(0, "2\t0"),   # 2 commits behind
+                _proc(0, "2\t0"),  # 2 commits behind
             ]
             state = get_git_state(tmp_path)
 
@@ -91,7 +89,7 @@ class TestGetGitState:
                 _proc(0, "true"),
                 _proc(0, ""),
                 _proc(0),
-                _proc(128, ""),     # rev-list fails — no upstream configured
+                _proc(128, ""),  # rev-list fails — no upstream configured
             ]
             state = get_git_state(tmp_path)
 

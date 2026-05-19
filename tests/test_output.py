@@ -1,13 +1,20 @@
 import json
 
-import pytest
 
 from homelab_repo_status.output import read_records, write_records
 
 
 RECORDS = [
-    {"repo_name": "foo", "is_git_repo": True, "scan_timestamp": "2026-05-19T00:00:00+00:00"},
-    {"repo_name": "bar", "is_git_repo": False, "scan_timestamp": "2026-05-19T00:00:00+00:00"},
+    {
+        "repo_name": "foo",
+        "is_git_repo": True,
+        "scan_timestamp": "2026-05-19T00:00:00+00:00",
+    },
+    {
+        "repo_name": "bar",
+        "is_git_repo": False,
+        "scan_timestamp": "2026-05-19T00:00:00+00:00",
+    },
 ]
 
 
@@ -15,7 +22,7 @@ class TestWriteRecords:
     def test_one_json_object_per_line(self, tmp_path):
         path = tmp_path / "status.jsonl"
         write_records(RECORDS, path)
-        lines = [l for l in path.read_text().splitlines() if l.strip()]
+        lines = [line for line in path.read_text().splitlines() if line.strip()]
         assert len(lines) == 2
         for line in lines:
             json.loads(line)  # each line must be valid JSON

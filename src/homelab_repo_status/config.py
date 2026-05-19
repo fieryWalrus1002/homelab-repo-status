@@ -5,7 +5,7 @@ import yaml
 
 _DEFAULTS = {
     "git": {
-        "fetch_timeout": 5,
+        "command_timeout": 5,
     },
 }
 

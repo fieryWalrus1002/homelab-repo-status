@@ -52,7 +52,7 @@ cp .env.example .env   # fill in secrets
 docker compose up -d
 ```
 
-Service runs on port `8086`. Repos are mounted read-only from `REPOS_DIR`.
+Service runs on port `8086`. Repos are mounted from `REPOS_DIR` (read-write, required for `git fetch`).
 
 Swagger UI available at `http://localhost:8086/docs`.
 
@@ -62,7 +62,7 @@ Tunable parameters live in `config.yml` (mounted into the container, no rebuild 
 
 ```yaml
 git:
-  fetch_timeout: 5  # seconds per repo before treating remote as offline
+  command_timeout: 5  # seconds; applies to each git subprocess (fetch, status, rev-parse, etc.)
 ```
 
 ## Environment variables
@@ -77,7 +77,7 @@ git:
 | `SLACK_USERNAME` | `homelab-repo-status` | Slack bot display name |
 | `SLACK_ICON_EMOJI` | `:house:` | Slack bot icon |
 | `NTFY_TOPIC` | _(unset)_ | ntfy.sh topic name |
-| `HOMELAB_REPO_STATUS_ALERT_LOG` | `/app/data/alerts.log` | Alert log path |
+| `HOMELAB_REPO_STATUS_ALERT_LOG` | `homelab_repo_status_alerts.log` | Alert log path (docker-compose sets `/app/data/alerts.log`) |
 
 ## Cron usage
 
