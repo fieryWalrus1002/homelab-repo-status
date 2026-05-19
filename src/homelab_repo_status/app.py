@@ -38,7 +38,7 @@ def trigger_alert() -> dict:
     )
 
 
-# Need some endpoitns for the ~/.local/bin/homelab-repo-status script to call:
+# Need some endpoints for the ~/.local/bin/homelab-repo-status script to call:
 # 
 # 1. performa a scan, and return the results as a pretty printed table summary
 # 2. perform a scan, and then trigger an alert if any repositories are found to be in a "bad" state (e.g., outdated, vulnerable, etc.)
